@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Stock Market Simulator - Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <nav class="top-nav">
+        <div class="nav-brand">Stock Market Simulator</div>
+        <div class="user-info">
+            <span>Welcome, {{ session['username'] }}</span>
+            <span class="balance">Balance: ${{ "%.2f"|format(balance) }}</span>
+            <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+        </div>
+    </nav>
+
+    <div class="dashboard-container">
+        <!-- Tutorial Section -->
+        <div class="tutorial-section">
+            <h1>Welcome to Stock Market Investing</h1>
+            <div class="tutorial-cards">
+                <div class="tutorial-card">
+                    <i class="fas fa-chart-line"></i>
+                    <h2>What are Stocks?</h2>
+                    <p>Stocks represent ownership in a company. When you buy a stock, you're purchasing a small piece of that company. As the company grows and becomes more valuable, your stock may increase in value too.</p>
+                </div>
+
+                <div class="tutorial-card">
+                    <i class="fas fa-coins"></i>
+                    <h2>How to Make Money?</h2>
+                    <p>Investors can make money in two ways:
+                        <ul>
+                            <li>Capital Gains: Selling stocks at a higher price than purchase</li>
+                            <li>Dividends: Regular payments some companies make to shareholders</li>
+                        </ul>
+                    </p>
+                </div>
+
+                <div class="tutorial-card">
+                    <i class="fas fa-balance-scale"></i>
+                    <h2>Understanding Risk</h2>
+                    <p>Stock prices can go up AND down. Never invest money you can't afford to lose. Diversification (buying different types of stocks) can help manage risk.</p>
+                </div>
+            </div>
+
+            <div class="tutorial-cards">
+                <div class="tutorial-card">
+                    <i class="fas fa-book-reader"></i>
+                    <h2>Basic Terms</h2>
+                    <ul class="terms-list">
+                        <li><strong>Market Cap:</strong> Total value of a company</li>
+                        <li><strong>P/E Ratio:</strong> Price relative to company earnings</li>
+                        <li><strong>Volume:</strong> Number of shares traded</li>
+                        <li><strong>Dividend Yield:</strong> Percentage of stock price paid as dividends</li>
+                    </ul>
+                </div>
+
+                <div class="tutorial-card">
+                    <i class="fas fa-graduation-cap"></i>
+                    <h2>Investment Strategies</h2>
+                    <ul class="strategy-list">
+                        <li><strong>Long-term:</strong> Buy and hold for years</li>
+                        <li><strong>Value Investing:</strong> Look for undervalued stocks</li>
+                        <li><strong>Growth Investing:</strong> Focus on growing companies</li>
+                        <li><strong>Dividend Investing:</strong> Focus on dividend-paying stocks</li>
+                    </ul>
+                </div>
+
+                <div class="tutorial-card">
+                    <i class="fas fa-tasks"></i>
+                    <h2>How to Use This Simulator</h2>
+                    <ol class="usage-list">
+                        <li>Search for stocks using their symbol (e.g., AAPL for Apple)</li>
+                        <li>Research the company and current price</li>
+                        <li>Decide how many shares to buy</li>
+                        <li>Monitor your portfolio's performance</li>
+                        <li>Sell shares when you think it's right</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trading Section -->
+        <div class="trading-section">
+            <h2>Start Trading</h2>
+            <div class="search-box">
+                <form action="{{ url_for('search') }}" method="POST">
+                    <input type="text" name="symbol" placeholder="Enter stock symbol (e.g., AAPL)" required>
+                    <button type="submit">Search</button>
+                </form>
+            </div>
+
+            {% if stock %}
+            <div class="stock-detail-card">
+                <h3>{{ stock.name }} ({{ stock.symbol }})</h3>
+                <div class="stock-price">${{ "%.2f"|format(stock.price) }}</div>
+                <div class="stock-change {{ 'positive' if stock.change > 0 else 'negative' }}">
+                    {{ "%.2f"|format(stock.change) }}%
+                </div>
+                <div class="stock-info-grid">
+                    <div class="info-item">
+                        <span class="label">Market Cap:</span>
+                        <span class="value">${{ "{:,.0f}".format(stock.market_cap/1000000000) }}B</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">P/E Ratio:</span>
+                        <span class="value">{{ "%.2f"|format(stock.pe_ratio) }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Volume:</span>
+                        <span class="value">{{ "{:,}".format(stock.volume) }}</span>
+                    </div>
+                    {% if stock.dividend_yield %}
+                    <div class="info-item">
+                        <span class="label">Dividend Yield:</span>
+                        <span class="value">{{ "%.2f"|format(stock.dividend_yield * 100) }}%</span>
+                    </div>
+                    {% endif %}
+                </div>
+                <form action="{{ url_for('buy') }}" method="POST" class="buy-form">
+                    <input type="hidden" name="symbol" value="{{ stock.symbol }}">
+                    <input type="number" name="shares" placeholder="Number of shares" min="1" required>
+                    <button type="submit">Buy Shares</button>
+                </form>
+            </div>
+            {% endif %}
+
+            {% if portfolio %}
+            <div class="portfolio-section">
+                <h2>Your Portfolio</h2>
+                <div class="portfolio-grid">
+                    {% for stock in portfolio %}
+                    <div class="portfolio-card">
+                        <div class="portfolio-header">
+                            <h3>{{ stock.symbol }}</h3>
+                            <span class="shares">{{ stock.shares }} shares</span>
+                        </div>
+                        <div class="portfolio-details">
+                            <p>Purchase Price: ${{ "%.2f"|format(stock.purchase_price) }}</p>
+                            <p>Current Price: ${{ "%.2f"|format(stock.current_price) }}</p>
+                            <p>Total Value: ${{ "%.2f"|format(stock.value) }}</p>
+                            <p class="profit-loss {{ 'profit' if stock.profit_loss > 0 else 'loss' }}">
+                                Profit/Loss: ${{ "%.2f"|format(stock.profit_loss) }}
+                            </p>
+                        </div>
+                        <form action="{{ url_for('sell') }}" method="POST" class="sell-form">
+                            <input type="hidden" name="symbol" value="{{ stock.symbol }}">
+                            <input type="number" name="shares" placeholder="Shares to sell" min="1" max="{{ stock.shares }}" required>
+                            <button type="submit">Sell</button>
+                        </form>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
