@@ -1,31 +1,59 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Login - Stock Investment Simulator</title>
+    <title>StockSim - Your First Step into Investing</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
-<body>
-    <div class="auth-container">
-        <h1>Login</h1>
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="flash-message">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-        <form method="POST" action="{{ url_for('login') }}" class="auth-form">
-            <div class="form-group">
-                <label for="username">Username:</label>
-                <input type="text" id="username" name="username" required>
+<body class="login-body">
+    <div class="login-container">
+        <div class="login-left">
+            <h1>StockSim <i class="fas fa-chart-line"></i></h1>
+            <p class="tagline">Start Your Investment Journey Today!</p>
+            <div class="features-list">
+                <div class="feature-item">
+                    <i class="fas fa-coins"></i>
+                    <span>Start with $10,000 Virtual Money</span>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>Learn Real Trading Strategies</span>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Track Your Performance</span>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-trophy"></i>
+                    <span>Compete with Friends</span>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="password">Password:</label>
-                <input type="password" id="password" name="password" required>
+        </div>
+        <div class="login-right">
+            <div class="login-form-container">
+                <h2>Welcome Back!</h2>
+                <form action="{{ url_for('login') }}" method="POST" class="login-form">
+                    <div class="form-group">
+                        <i class="fas fa-user"></i>
+                        <input type="text" name="username" placeholder="Username" required>
+                    </div>
+                    <div class="form-group">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" name="password" placeholder="Password" required>
+                    </div>
+                    <button type="submit">Login <i class="fas fa-arrow-right"></i></button>
+                </form>
+                {% with messages = get_flashed_messages() %}
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert">{{ message }}</div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                <p class="register-link">New to StockSim? <a href="{{ url_for('register') }}">Create Account</a></p>
             </div>
-            <button type="submit">Login</button>
-        </form>
-        <p>Don't have an account? <a href="{{ url_for('register') }}">Register here</a></p>
+        </div>
     </div>
 </body>
 </html>
