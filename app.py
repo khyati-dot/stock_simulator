@@ -81,17 +81,63 @@ def update_competition_standings():
 
 @app.route('/')
 def home():
-    if 'username' not in session:
-        return redirect(url_for('login'))
-    
-    username = session['username']
-    if username not in users:
-        users[username] = {
-            'balance': 10000,
-            'password': 'temporary'
-        }
-        portfolios[username] = []
-    
+    # existing code...
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        if username in users and check_password_hash(users[username]['password'], password):
+            session['username'] = username
+            return redirect(url_for('home'))
+        flash('Invalid username or password')
+    return render_template('login.html')
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        if username in users:
+            flash('Username already exists')
+        else:
+            users[username] = {
+                'password': generate_password_hash(password),
+                'balance': 10000
+            }
+            session['username'] = username
+            return redirect(url_for('home'))
+    return render_template('register.html')
+
+@app.route('/logout')
+def logout():
+    session.pop('username', None)
+    return redirect(url_for('login'))
+
+@app.route('/search', methods=['POST'])
+def search():
+    # existing code...
+
+@app.route('/buy', methods=['POST'])
+def buy():
+    # existing code...
+
+@app.route('/sell', methods=['POST'])
+def sell():
+    # existing code...
+
+@app.route('/get_updates')
+def get_updates():
+    # existing code...
+
+@app.route('/set_alert', methods=['POST'])
+def set_alert():
+    # existing code...
+
+@app.route('/get_chart/<symbol>')
+def get_chart(symbol):
+    # existing code...    
     # Update competition standings
     update_competition_standings()
     
