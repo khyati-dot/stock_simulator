@@ -1,4 +1,16 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+# Comment out these imports temporarily
+# import plotly
+# import pandas
+# import numpy
+
+# Comment out the real-time updates
+# def update_portfolio_values():
+#     while True:
+#         ...
+
+# Comment out the thread
+# update_thread = threading.Thread(target=update_portfolio_values, daemon=True)
+# update_thread.start()from flask import Flask, render_template, request, redirect, url_for, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 import yfinance as yf
 from datetime import datetime, timedelta
