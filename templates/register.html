@@ -1,31 +1,63 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Register - Stock Investment Simulator</title>
+    <title>StockSim - Join the Investment Journey</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
-<body>
-    <div class="auth-container">
-        <h1>Register</h1>
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="flash-message">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-        <form method="POST" action="{{ url_for('register') }}" class="auth-form">
-            <div class="form-group">
-                <label for="username">Username:</label>
-                <input type="text" id="username" name="username" required>
+<body class="login-body">
+    <div class="login-container">
+        <div class="login-left">
+            <h1>Join StockSim <i class="fas fa-rocket"></i></h1>
+            <p class="tagline">Your Journey to Financial Success Starts Here!</p>
+            <div class="features-list">
+                <div class="feature-item">
+                    <i class="fas fa-coins"></i>
+                    <span>Free $10,000 Virtual Portfolio</span>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-users"></i>
+                    <span>Join Trading Competitions</span>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Real-Time Market Data</span>
+                </div>
+                <div class="feature-item">
+                    <i class="fas fa-medal"></i>
+                    <span>Earn Achievement Badges</span>
+                </div>
             </div>
-            <div class="form-group">
-                <label for="password">Password:</label>
-                <input type="password" id="password" name="password" required>
+        </div>
+        <div class="login-right">
+            <div class="login-form-container">
+                <h2>Create Your Account</h2>
+                <form action="{{ url_for('register') }}" method="POST" class="login-form">
+                    <div class="form-group">
+                        <i class="fas fa-user"></i>
+                        <input type="text" name="username" placeholder="Choose Username" required>
+                    </div>
+                    <div class="form-group">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" name="password" placeholder="Create Password" required>
+                    </div>
+                    <div class="form-group">
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" name="email" placeholder="Your Email" required>
+                    </div>
+                    <button type="submit">Create Account <i class="fas fa-arrow-right"></i></button>
+                </form>
+                {% with messages = get_flashed_messages() %}
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert">{{ message }}</div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                <p class="register-link">Already have an account? <a href="{{ url_for('login') }}">Login</a></p>
             </div>
-            <button type="submit">Register</button>
-        </form>
-        <p>Already have an account? <a href="{{ url_for('login') }}">Login here</a></p>
+        </div>
     </div>
 </body>
 </html>

@@ -1,14 +1,24 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 import yfinance as yf
-from datetime import datetime
+from datetime import datetime, timedelta
+import operator
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key_here'
 
-# Simulate a database
+# Simulate databases
 users = {}
 portfolios = {}
+competitions = {
+    'weekly': {
+        'start_date': datetime.now(),
+        'end_date': datetime.now() + timedelta(days=7),
+        'participants': {},
+        'leaderboard': []
+    }
+}
+
 stock_list = {
     'AAPL': 'Apple Inc.',
     'GOOGL': 'Alphabet Inc.',
@@ -37,6 +47,38 @@ def get_stock_data(symbol):
     except:
         return None
 
+def update_competition_standings():
+    weekly_comp = competitions['weekly']
+    
+    # Reset leaderboard
+    weekly_comp['leaderboard'] = []
+    
+    # Calculate total portfolio value for each participant
+    for username in users:
+        portfolio_value = users[username]['balance']
+        
+        # Add value of stocks
+        for stock in portfolios.get(username, []):
+            current_data = get_stock_data(stock['symbol'])
+            if current_data:
+                portfolio_value += stock['shares'] * current_data['price']
+        
+        weekly_comp['participants'][username] = portfolio_value
+        weekly_comp['leaderboard'].append({
+            'username': username,
+            'value': portfolio_value
+        })
+    
+    # Sort leaderboard by value
+    weekly_comp['leaderboard'].sort(key=operator.itemgetter('value'), reverse=True)
+    
+    # Check if competition needs to be reset
+    if datetime.now() > weekly_comp['end_date']:
+        # Archive results and start new competition
+        weekly_comp['start_date'] = datetime.now()
+        weekly_comp['end_date'] = datetime.now() + timedelta(days=7)
+        weekly_comp['participants'] = {}
+
 @app.route('/')
 def home():
     if 'username' not in session:
@@ -50,150 +92,45 @@ def home():
         }
         portfolios[username] = []
     
+    # Update competition standings
+    update_competition_standings()
+    
     portfolio = portfolios.get(username, [])
     
     # Update portfolio with live data
+    total_portfolio_value = users[username]['balance']
     for stock in portfolio:
         current_data = get_stock_data(stock['symbol'])
         if current_data:
             stock['current_price'] = current_data['price']
             stock['value'] = stock['shares'] * stock['current_price']
-            stock['profit_loss'] = stock['value'] - (stock['shares'] * stock['purchase_price'])
+            stock['profit_loss'] = ((stock['current_price'] - stock['purchase_price']) / stock['purchase_price']) * 100
+            total_portfolio_value += stock['value']
     
-    return render_template('dashboard.html',  # Changed from index.html to dashboard.html
+    # Get user's rank in competition
+    user_rank = next((index + 1 for (index, d) in enumerate(competitions['weekly']['leaderboard']) 
+                     if d['username'] == username), 0)
+    
+    return render_template('dashboard.html',
                          balance=users[username]['balance'],
                          portfolio=portfolio,
-                         stock_list=stock_list)
+                         stock_list=stock_list,
+                         leaderboard=competitions['weekly']['leaderboard'][:5],
+                         user_rank=user_rank,
+                         total_value=total_portfolio_value,
+                         competition_end=competitions['weekly']['end_date'])
 
-@app.route('/search', methods=['POST'])
-def search():
+# ... (keep your existing routes for login, register, search, buy, sell, logout)
+
+@app.route('/leaderboard')
+def leaderboard():
     if 'username' not in session:
         return redirect(url_for('login'))
     
-    symbol = request.form['symbol'].upper()
-    stock_data = get_stock_data(symbol)
-    
-    if stock_data:
-        return render_template('dashboard.html',  # Changed from index.html to dashboard.html
-                             balance=users[session['username']]['balance'],
-                             portfolio=portfolios[session['username']],
-                             stock_list=stock_list,
-                             stock=stock_data)
-    
-    flash(f"Stock {symbol} not found!")
-    return redirect(url_for('home'))
-
-@app.route('/buy', methods=['POST'])
-def buy():
-    if 'username' not in session:
-        return redirect(url_for('login'))
-    
-    username = session['username']
-    symbol = request.form['symbol']
-    shares = int(request.form['shares'])
-    
-    stock_data = get_stock_data(symbol)
-    if not stock_data:
-        flash("Could not get stock data!")
-        return redirect(url_for('home'))
-    
-    price = stock_data['price']
-    total_cost = shares * price
-    
-    if total_cost <= users[username]['balance']:
-        users[username]['balance'] -= total_cost
-        
-        portfolio = portfolios[username]
-        for stock in portfolio:
-            if stock['symbol'] == symbol:
-                total_shares = stock['shares'] + shares
-                total_cost = (stock['shares'] * stock['purchase_price']) + (shares * price)
-                stock['purchase_price'] = total_cost / total_shares
-                stock['shares'] = total_shares
-                break
-        else:
-            portfolio.append({
-                'symbol': symbol,
-                'shares': shares,
-                'purchase_price': price
-            })
-        
-        flash(f"Successfully bought {shares} shares of {symbol} at ${price:.2f} per share")
-    else:
-        flash("Insufficient funds!")
-    
-    return redirect(url_for('home'))
-
-@app.route('/sell', methods=['POST'])
-def sell():
-    if 'username' not in session:
-        return redirect(url_for('login'))
-    
-    username = session['username']
-    symbol = request.form['symbol']
-    shares_to_sell = int(request.form['shares'])
-    
-    stock_data = get_stock_data(symbol)
-    if not stock_data:
-        flash("Could not get stock data!")
-        return redirect(url_for('home'))
-    
-    portfolio = portfolios[username]
-    for stock in portfolio:
-        if stock['symbol'] == symbol and stock['shares'] >= shares_to_sell:
-            stock['shares'] -= shares_to_sell
-            current_price = stock_data['price']
-            users[username]['balance'] += shares_to_sell * current_price
-            
-            if stock['shares'] == 0:
-                portfolio.remove(stock)
-            
-            flash(f"Successfully sold {shares_to_sell} shares of {symbol} at ${current_price:.2f} per share")
-            break
-    else:
-        flash("You don't have enough shares to sell!")
-    
-    return redirect(url_for('home'))
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        
-        if username in users and check_password_hash(users[username]['password'], password):
-            session['username'] = username
-            return redirect(url_for('home'))
-        
-        flash('Invalid username or password!')
-    
-    return render_template('login.html')
-
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        
-        if username in users:
-            flash('Username already exists!')
-            return redirect(url_for('register'))
-        
-        users[username] = {
-            'password': generate_password_hash(password),
-            'balance': 10000
-        }
-        portfolios[username] = []
-        
-        flash('Registration successful! Please login.')
-        return redirect(url_for('login'))
-    
-    return render_template('register.html')
-
-@app.route('/logout')
-def logout():
-    session.pop('username', None)
-    return redirect(url_for('login'))
+    update_competition_standings()
+    return render_template('leaderboard.html',
+                         leaderboard=competitions['weekly']['leaderboard'],
+                         end_date=competitions['weekly']['end_date'])
 
 if __name__ == '__main__':
     app.run(debug=True)
